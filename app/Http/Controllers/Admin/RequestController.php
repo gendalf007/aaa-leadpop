@@ -90,7 +90,14 @@ class RequestController extends Controller
 
         foreach ($requests as $r) {
             $before = $r->crm_status;
-            $dispatcher->dispatch($r);
+            try {
+                $dispatcher->dispatch($r);
+            } catch (\Throwable $e) {
+                \Log::error('Lead dispatch failed (bulk)', [
+                    'form_request_id' => $r->id,
+                    'error'           => $e->getMessage(),
+                ]);
+            }
             $r->refresh();
             if ($r->crm_status === 'skipped' && $before !== 'sent') {
                 $skipped++;

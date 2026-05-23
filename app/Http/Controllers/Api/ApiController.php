@@ -7,6 +7,7 @@ use App\Models\FormRequest;
 use App\Models\Site;
 use App\Services\PlexCrm\PlexLeadDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ApiController extends Controller
@@ -39,7 +40,15 @@ class ApiController extends Controller
             'lead_type'  => $leadType,
         ]);
 
-        $dispatcher->dispatch($formRequest);
+        try {
+            $dispatcher->dispatch($formRequest);
+        } catch (\Throwable $e) {
+            Log::error('Lead dispatch failed (API)', [
+                'form_request_id' => $formRequest->id,
+                'site_id'         => $formRequest->site_id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,

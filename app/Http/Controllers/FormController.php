@@ -6,6 +6,7 @@ use App\Models\FormRequest;
 use App\Models\Site;
 use App\Services\PlexCrm\PlexLeadDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class FormController extends Controller
@@ -67,7 +68,18 @@ class FormController extends Controller
             'lead_type'  => $leadType,
         ]);
 
-        $dispatcher->dispatch($formRequest);
+        // Изолируем сабмит от падений Plex/webhook: заявка уже сохранена в БД,
+        // а статус доставки трекается на самом FormRequest (failed/skipped/sent).
+        // На sync-очереди исключение из job всплыло бы в HTTP-ответ — этого допускать нельзя.
+        try {
+            $dispatcher->dispatch($formRequest);
+        } catch (\Throwable $e) {
+            Log::error('Lead dispatch failed', [
+                'form_request_id' => $formRequest->id,
+                'site_id'         => $formRequest->site_id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
 
         if ($request->ajax()) {
             return response()->json([
