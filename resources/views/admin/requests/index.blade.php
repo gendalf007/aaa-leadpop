@@ -111,6 +111,7 @@
                             <th>Имя</th>
                             <th>Телефон</th>
                             <th>Email</th>
+                            <th>Комментарий</th>
                             <th>Источник</th>
                             <th>IP адрес</th>
                             <th>Дата</th>
@@ -143,6 +144,14 @@
                                 </td>
                                 <td>{{ $request->getPhone() }}</td>
                                 <td>{{ $request->getFieldValue('email') }}</td>
+                                <td>
+                                    @if($request->getComment())
+                                        <span class="text-truncate d-inline-block" style="max-width: 200px;"
+                                              title="{{ $request->getComment() }}">{{ $request->getComment() }}</span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-info">{{ $request->getSource() }}</span>
                                 </td>
