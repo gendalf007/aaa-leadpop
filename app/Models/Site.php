@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CrmProvider;
 use App\Enums\PlexLeadType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ class Site extends Model
         'allowed_lead_types',
         'default_lead_type',
         'send_to_crm',
+        'crm_provider',
         'test_webhook_url',
     ];
 
@@ -106,6 +108,33 @@ class Site extends Model
         return $this->default_lead_type
             ? PlexLeadType::tryFrom($this->default_lead_type)
             : null;
+    }
+
+    public function crmProvider(): CrmProvider
+    {
+        return CrmProvider::tryFrom((string) $this->crm_provider) ?? CrmProvider::Plex;
+    }
+
+    public function isCrmConfigured(): bool
+    {
+        return match ($this->crmProvider()) {
+            CrmProvider::Plex      => $this->isPlexConfigured(),
+            CrmProvider::DrivePort => $this->isDrivePortConfigured(),
+        };
+    }
+
+    /**
+     * Драйв Порт требует только values.clientPhone; тип заявки опционален.
+     */
+    public function isDrivePortConfigured(): bool
+    {
+        return (bool) $this->send_to_crm
+            && ! empty(config('services.drive_port.url'))
+            && ! empty(config('services.drive_port.secret'))
+            && $this->fields()
+                ->where('is_active', true)
+                ->where('plex_key', 'clientPhone')
+                ->exists();
     }
 
     public function isPlexConfigured(): bool

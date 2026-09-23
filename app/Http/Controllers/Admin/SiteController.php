@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CrmProvider;
 use App\Enums\PlexLeadType;
 use App\Http\Controllers\Controller;
 use App\Models\Site;
@@ -131,6 +132,7 @@ class SiteController extends Controller
             'allowed_lead_types.*' => ['string', Rule::in($leadValues)],
             'default_lead_type'   => ['nullable', 'string', Rule::in($leadValues)],
             'send_to_crm'         => 'nullable|boolean',
+            'crm_provider'        => ['required', Rule::enum(CrmProvider::class)],
             'test_webhook_url'    => 'nullable|url|max:255',
         ]);
     }
@@ -153,6 +155,7 @@ class SiteController extends Controller
             'allowed_lead_types' => $allowed ?: null,
             'default_lead_type' => $default,
             'send_to_crm'       => $request->boolean('send_to_crm'),
+            'crm_provider'      => $data['crm_provider'],
             'test_webhook_url'  => $data['test_webhook_url'] ?? null,
             'settings'          => [
                 'design' => [

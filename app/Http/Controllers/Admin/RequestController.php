@@ -87,9 +87,14 @@ class RequestController extends Controller
         $dispatcher = app(PlexLeadDispatcher::class);
         $queued = 0;
         $skipped = 0;
+        $alreadySent = 0;
 
         foreach ($requests as $r) {
-            $before = $r->crm_status;
+            // Диспетчер доставленные заявки в CRM не шлёт — просто считаем их.
+            if ($r->crm_status === 'sent') {
+                $alreadySent++;
+                continue;
+            }
             try {
                 $dispatcher->dispatch($r);
             } catch (\Throwable $e) {
@@ -99,7 +104,7 @@ class RequestController extends Controller
                 ]);
             }
             $r->refresh();
-            if ($r->crm_status === 'skipped' && $before !== 'sent') {
+            if ($r->crm_status === 'skipped') {
                 $skipped++;
             } else {
                 $queued++;
@@ -108,7 +113,10 @@ class RequestController extends Controller
 
         $msg = "Отправлено в очередь: {$queued}";
         if ($skipped > 0) {
-            $msg .= ". Пропущено (Plex CRM не сконфигурирован): {$skipped}";
+            $msg .= ". Пропущено (CRM сайта не сконфигурирована): {$skipped}";
+        }
+        if ($alreadySent > 0) {
+            $msg .= ". Уже были отправлены ранее: {$alreadySent}";
         }
 
         return back()->with('success', $msg);

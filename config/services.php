@@ -43,4 +43,11 @@ return [
         'retry_sleep_ms' => (int) env('PLEX_CRM_RETRY_SLEEP_MS', 1000),
     ],
 
+    'drive_port' => [
+        'url'        => env('DRIVE_PORT_URL', 'https://api.crmavtokrasnodar.ru/api/integrations/hooks/contact-form/drive-port'),
+        'secret'     => env('DRIVE_PORT_SECRET'),
+        'website_id' => env('DRIVE_PORT_WEBSITE_ID', 'Лид М'),
+        'timeout'    => (int) env('DRIVE_PORT_TIMEOUT', 10),
+    ],
+
 ];

@@ -77,7 +77,7 @@
                     <tr>
                         <td><strong>Сконфигурировано:</strong></td>
                         <td>
-                            @if($site->isPlexConfigured())
+                            @if($site->isCrmConfigured())
                                 <span class="badge bg-success">Да</span>
                             @else
                                 <span class="badge bg-secondary">Нет</span>
@@ -85,7 +85,11 @@
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Отправка в Plex:</strong></td>
+                        <td><strong>CRM:</strong></td>
+                        <td>{{ $site->crmProvider()->label() }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Отправка в CRM:</strong></td>
                         <td>
                             @if($site->send_to_crm)
                                 <span class="badge bg-success">Включена</span>

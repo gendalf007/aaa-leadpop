@@ -1,13 +1,29 @@
 @php
+    use App\Enums\CrmProvider;
     use App\Enums\PlexLeadType;
     $site = $site ?? null;
     $currentAllowed = old('allowed_lead_types', $site?->allowed_lead_types ?? []);
     $currentAllowed = is_array($currentAllowed) ? $currentAllowed : [];
     $currentDefault = old('default_lead_type', $site?->default_lead_type);
+    $currentProvider = old('crm_provider', $site?->crm_provider ?? CrmProvider::Plex->value);
 @endphp
 
 <div class="col-md-6">
-    <h5 class="mb-3">Plex CRM</h5>
+    <h5 class="mb-3">CRM</h5>
+
+    <div class="mb-3">
+        <label for="crm_provider" class="form-label">Куда отправлять заявки</label>
+        <select class="form-select @error('crm_provider') is-invalid @enderror"
+                id="crm_provider" name="crm_provider">
+            @foreach(CrmProvider::options() as $key => $label)
+                <option value="{{ $key }}" {{ $currentProvider === $key ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
+        </select>
+        <div class="form-text" data-crm-only="drive_port">
+            URL, секрет и источник («Лид М») Драйв Порта задаются в <code>.env</code> сервера.
+        </div>
+        @error('crm_provider')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
 
     <div class="mb-3">
         <div class="form-check form-switch">
@@ -15,10 +31,10 @@
                    id="send_to_crm" name="send_to_crm" value="1"
                    {{ old('send_to_crm', $site?->send_to_crm ?? true) ? 'checked' : '' }}>
             <label class="form-check-label" for="send_to_crm">
-                <strong>Отправлять заявки в Plex CRM</strong>
+                <strong>Отправлять заявки в CRM</strong>
             </label>
         </div>
-        <div class="form-text">Если выключено — заявки сохраняются в БД, но в Plex не уходят.</div>
+        <div class="form-text">Если выключено — заявки сохраняются в БД, но в CRM не уходят.</div>
     </div>
 
     <div class="mb-3">
@@ -34,6 +50,7 @@
 
     <hr>
 
+    <div data-crm-only="plex">
     <div class="mb-3">
         <label for="plex_dealer_id" class="form-label">ID компании в Plex CRM (dealerId)</label>
         <input type="number" min="1" class="form-control @error('plex_dealer_id') is-invalid @enderror"
@@ -55,9 +72,11 @@
         </div>
         @error('plex_website_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
+    </div>
 
     <div class="mb-3">
         <label class="form-label d-block">Допустимые типы заявок</label>
+        <div class="form-text mt-0 mb-2">Если отмечено несколько — в форме появится выпадающий список «Тип заявки».</div>
         <div class="row g-2">
             @foreach(PlexLeadType::options() as $key => $label)
                 <div class="col-md-6">
@@ -100,6 +119,19 @@
 
 @push('scripts')
 <script>
+(function () {
+    const provider = document.getElementById('crm_provider');
+    if (!provider) return;
+
+    function toggle() {
+        document.querySelectorAll('[data-crm-only]').forEach(el => {
+            el.style.display = el.dataset.crmOnly === provider.value ? '' : 'none';
+        });
+    }
+    provider.addEventListener('change', toggle);
+    toggle();
+})();
+
 (function () {
     const select = document.getElementById('default_lead_type');
     if (!select) return;

@@ -23,8 +23,26 @@ class PlexPayloadBuilder
             'websiteHost' => $site->domain ?: null,
         ], fn ($v) => $v !== null && $v !== '');
 
+        $values = $this->values($r);
+        if (isset($values['clientPhone'])) {
+            $values['clientPhone'] = $this->formatPhone((string) $values['clientPhone']);
+        }
+
+        return [
+            'type'   => $type,
+            'source' => $source,
+            'values' => $values,
+        ];
+    }
+
+    /**
+     * values по размеченным plex_key полям сайта, без провайдер-специфичного форматирования.
+     * Формат общий с Драйв Портом.
+     */
+    public function values(FormRequest $r): array
+    {
         $values = [];
-        $fields = $site->fields()
+        $fields = $r->site->fields()
             ->where('is_active', true)
             ->whereNotNull('plex_key')
             ->where('plex_key', '!=', '')
@@ -39,17 +57,10 @@ class PlexPayloadBuilder
             if (is_array($value)) {
                 $value = implode(', ', $value);
             }
-            if ($field->plex_key === 'clientPhone') {
-                $value = $this->formatPhone((string) $value);
-            }
             $values[$field->plex_key] = $value;
         }
 
-        return [
-            'type'   => $type,
-            'source' => $source,
-            'values' => $values,
-        ];
+        return $values;
     }
 
     private function formatPhone(string $phone): string
