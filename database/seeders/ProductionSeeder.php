@@ -12,7 +12,8 @@ use Illuminate\Support\Str;
 /**
  * Начальные данные: админ и сайт «Лид М» → Драйв Порт.
  * Домен сайта — m.<хост APP_URL>: на проде m.leadpop.ru, локально m.aaa-lead-form.test.
- * Идемпотентен: существующие записи не перезаписывает (правки из админки сохраняются).
+ * Идемпотентен: админа и настройки сайта не перезаписывает (правки из админки сохраняются),
+ * а поля формы приводит к полям values API Драйв Порта — это и есть маппинг.
  *
  *   php artisan db:seed --class=ProductionSeeder --force
  */
@@ -71,14 +72,17 @@ class ProductionSeeder extends Seeder
             ],
         ]);
 
+        // Все поля values из API Драйв Порта; обязателен только clientPhone.
         $fields = [
-            ['name' => 'name',    'plex_key' => 'clientName',  'label' => 'ФИО',         'type' => 'text',     'required' => true,  'order' => 1],
-            ['name' => 'phone',   'plex_key' => 'clientPhone', 'label' => 'Телефон',     'type' => 'phone',    'required' => true,  'order' => 2],
-            ['name' => 'comment', 'plex_key' => 'comment',     'label' => 'Комментарий', 'type' => 'textarea', 'required' => false, 'order' => 3],
+            ['name' => 'name',        'plex_key' => 'clientName',  'label' => 'ФИО',         'type' => 'text',     'required' => false, 'order' => 1],
+            ['name' => 'phone',       'plex_key' => 'clientPhone', 'label' => 'Телефон',     'type' => 'phone',    'required' => true,  'order' => 2],
+            ['name' => 'comment',     'plex_key' => 'comment',     'label' => 'Комментарий', 'type' => 'textarea', 'required' => false, 'order' => 3],
+            ['name' => 'offer_title', 'plex_key' => 'offerTitle',  'label' => 'Автомобиль',  'type' => 'text',     'required' => false, 'order' => 4, 'placeholder' => 'Kia K5 2.5 AT, 2021'],
+            ['name' => 'offer_price', 'plex_key' => 'offerPrice',  'label' => 'Цена, ₽',     'type' => 'number',   'required' => false, 'order' => 5, 'placeholder' => '2365000'],
         ];
 
         foreach ($fields as $field) {
-            $site->fields()->firstOrCreate(['name' => $field['name']], $field + ['is_active' => true]);
+            $site->fields()->updateOrCreate(['name' => $field['name']], $field + ['is_active' => true]);
         }
 
         $this->command->info("Сайт {$site->domain} ({$site->crmProvider()->label()}) готов.");

@@ -68,6 +68,20 @@
             'type'     => 'textarea',
             'required' => false,
         ],
+        'offerTitle' => [
+            'option_label' => 'Автомобиль (offerTitle) — текстовое поле',
+            'name'     => 'offer_title',
+            'label'    => 'Автомобиль',
+            'type'     => 'text',
+            'required' => false,
+        ],
+        'offerPrice' => [
+            'option_label' => 'Цена (offerPrice) — число',
+            'name'     => 'offer_price',
+            'label'    => 'Цена, ₽',
+            'type'     => 'number',
+            'required' => false,
+        ],
     ];
 
     $isKnownPreset = $plexKeyValue !== null && array_key_exists($plexKeyValue, $plexPresets);
@@ -76,7 +90,7 @@
 <div class="mb-3">
     <label for="plex_template" class="form-label">Шаблон поля</label>
     <select class="form-select" id="plex_template">
-        <option value="">— Своё поле (без отправки в Plex) —</option>
+        <option value="">— Своё поле (без отправки в CRM) —</option>
         @foreach($plexPresets as $key => $preset)
             @if(!in_array($key, $usedPlexKeys, true))
                 <option value="{{ $key }}" {{ $isKnownPreset && $plexKeyValue === $key ? 'selected' : '' }}>
@@ -88,7 +102,8 @@
     <input type="hidden" id="plex_key" name="plex_key" value="{{ $plexKeyValue }}">
     <div class="form-text">
         Выберите шаблон — техническое имя, название и тип поля заполнятся автоматически.<br>
-        <strong>Обязательно</strong> должны быть размечены поля <strong>ФИО</strong> и <strong>Телефон</strong> — без них заявка не уйдёт в Plex.
+        Plex: <strong>обязательно</strong> должны быть размечены <strong>ФИО</strong> и <strong>Телефон</strong>.
+        Драйв Порт: обязателен только <strong>Телефон</strong>.
     </div>
     @error('plex_key')
         <div class="text-danger small mt-1">{{ $message }}</div>

@@ -39,6 +39,7 @@ class SiteCrmProviderTest extends TestCase
 
         $this->assertSame('drive_port', $site->refresh()->crm_provider);
         $this->actingAs($admin)->get(route('admin.sites.show', $site))->assertOk()->assertSee('Драйв Порт');
+        $this->actingAs($admin)->get(route('admin.sites.fields.create', $site))->assertOk()->assertSee('offerPrice');
     }
 
     public function test_unknown_provider_is_rejected(): void
@@ -62,7 +63,12 @@ class SiteCrmProviderTest extends TestCase
 
         $this->assertSame(1, User::where('email', 'cs@danali.ru')->count());
         $site = Site::where('domain', 'm.leadpop.ru')->sole();
-        $this->assertSame(3, $site->fields()->count());
+        $this->assertSame(
+            ['clientName', 'clientPhone', 'comment', 'offerTitle', 'offerPrice'],
+            $site->fields()->orderBy('order')->pluck('plex_key')->all()
+        );
+        // В API Драйв Порта обязателен только values.clientPhone.
+        $this->assertSame(['clientPhone'], $site->fields()->where('required', true)->pluck('plex_key')->all());
         $this->assertTrue($site->isDrivePortConfigured());
 
         $admin = User::where('email', 'cs@danali.ru')->sole();
@@ -72,6 +78,8 @@ class SiteCrmProviderTest extends TestCase
             ->assertOk()
             ->assertSee('name="_lead_type"', false)
             ->assertSee('Тест-драйв')
+            ->assertSee('name="offer_title"', false)
+            ->assertSee('name="offer_price"', false)
             ->assertDontSee('Не определён');
     }
 
@@ -83,14 +91,34 @@ class SiteCrmProviderTest extends TestCase
 
         $this->actingAs($admin)
             ->post('http://m.leadpop.ru/submit', [
-                'name'       => 'Иван',
-                'phone'      => '8 (999) 123-45-67',
-                '_lead_type' => 'credit',
+                'phone'       => '8 (999) 123-45-67',
+                'offer_title' => 'Kia K5 2.5 AT, 2021',
+                'offer_price' => '2365000',
+                '_lead_type'  => 'credit',
             ])
             ->assertSessionHas('success');
 
         $lead = \App\Models\FormRequest::sole();
         $this->assertSame('credit', $lead->lead_type);
         $this->assertSame('79991234567', $lead->form_data['phone']);
+        $this->assertSame('Kia K5 2.5 AT, 2021', $lead->form_data['offer_title']);
+
+        $payload = app(\App\Services\DrivePort\DrivePortPayloadBuilder::class)->build($lead);
+        $this->assertSame([
+            'clientPhone' => '79991234567',
+            'offerTitle'  => 'Kia K5 2.5 AT, 2021',
+            'offerPrice'  => '2365000',
+        ], $payload['values']);
+    }
+
+    public function test_seeder_brings_existing_site_fields_to_api_mapping(): void
+    {
+        $site = Site::create(['name' => 'Лид М', 'domain' => 'm.leadpop.ru', 'is_active' => true]);
+        $site->fields()->create(['name' => 'name', 'plex_key' => 'clientName', 'label' => 'ФИО', 'type' => 'text', 'required' => true, 'order' => 1]);
+
+        $this->seed(ProductionSeeder::class);
+
+        $this->assertFalse((bool) $site->fields()->where('name', 'name')->value('required'));
+        $this->assertSame(5, $site->fields()->count());
     }
 }
