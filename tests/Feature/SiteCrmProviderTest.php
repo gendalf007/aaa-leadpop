@@ -12,6 +12,13 @@ class SiteCrmProviderTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['app.url' => 'https://leadpop.ru']);
+    }
+
     public function test_admin_can_switch_site_to_drive_port(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
@@ -48,13 +55,15 @@ class SiteCrmProviderTest extends TestCase
 
     public function test_production_seeder_is_idempotent_and_form_has_lead_type_dropdown(): void
     {
+        config(['services.drive_port.secret' => 'test-secret']);
+
         $this->seed(ProductionSeeder::class);
         $this->seed(ProductionSeeder::class);
 
         $this->assertSame(1, User::where('email', 'cs@danali.ru')->count());
         $site = Site::where('domain', 'm.leadpop.ru')->sole();
         $this->assertSame(3, $site->fields()->count());
-        $this->assertTrue($site->isDrivePortConfigured() || config('services.drive_port.secret') === null);
+        $this->assertTrue($site->isDrivePortConfigured());
 
         $admin = User::where('email', 'cs@danali.ru')->sole();
 
@@ -68,7 +77,7 @@ class SiteCrmProviderTest extends TestCase
 
     public function test_form_submit_stores_selected_lead_type(): void
     {
-        config(['services.drive_port.secret' => null]); // без отправки наружу
+        config(['services.drive_port.secret' => '']); // без отправки наружу
         $this->seed(ProductionSeeder::class);
         $admin = User::where('email', 'cs@danali.ru')->sole();
 

@@ -10,7 +10,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Начальные данные продакшена: админ и сайт «Лид М» → Драйв Порт.
+ * Начальные данные: админ и сайт «Лид М» → Драйв Порт.
+ * Домен сайта — m.<хост APP_URL>: на проде m.leadpop.ru, локально m.aaa-lead-form.test.
  * Идемпотентен: существующие записи не перезаписывает (правки из админки сохраняются).
  *
  *   php artisan db:seed --class=ProductionSeeder --force
@@ -25,8 +26,8 @@ class ProductionSeeder extends Seeder
 
     private function seedAdmin(): void
     {
-        if (User::where('email', 'cs@danali.ru')->exists()) {
-            $this->command->info('Админ cs@danali.ru уже существует — пропускаю.');
+        if (User::where('email', 'cs@danali.ru')->orWhere('username', 'cs')->exists()) {
+            $this->command->info('Пользователь cs / cs@danali.ru уже существует — пропускаю.');
             return;
         }
 
@@ -51,7 +52,9 @@ class ProductionSeeder extends Seeder
             fn (string $v) => $v !== PlexLeadType::Unknown->value
         ));
 
-        $site = Site::firstOrCreate(['domain' => 'm.leadpop.ru'], [
+        $domain = 'm.' . parse_url(config('app.url'), PHP_URL_HOST);
+
+        $site = Site::firstOrCreate(['domain' => $domain], [
             'name'               => 'Лид М',
             'is_active'          => true,
             'send_to_crm'        => true,
